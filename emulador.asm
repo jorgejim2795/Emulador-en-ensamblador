@@ -1,3 +1,4 @@
+
 section .data
 	filename db "ROM.txt",0
 	welcome db 'Bienvenido al Emulador MIPS', 0xa
@@ -27,7 +28,10 @@ section .bss
 	data resb 400 ;memoria de datos
 	stack resb 400 ; capacidad de cien palabras
 	reg resb 128    ;banco de registros
+
 	PC resb 4      ;registro para pc
+	mflos resb 4	;registro para guardar los valores en operacion mult
+	mfhis resb 4 	;registro para guardar los valores en operacion mult
 	
 section .text
 	global _start
@@ -120,7 +124,7 @@ casi:
 	mov eax,[PC]
 	add eax,4
 	mov dword [PC],eax
-	cmp eax,36
+	cmp eax,600
 	jne lop
 
 ;salir del programa (el loop es muy raro XD)
@@ -288,14 +292,39 @@ ori:
 	mov dword [reg+r11d],r12d ; rt=rs or imm
 	jmp casi
 
+jr:
+	call rs
+	mov dword [PC],r12d ; rt=rs or imm
+	jmp casi
 
+slt:
+	call rs
+	call rt
+	call rd
+	cmp r12d,r13d
+	jl poneuno
+	mov r11d,0
+	jmp casi
+poneuno:
+	mov r11d,1
+	jmp casi
+mult:
+	call rs
+	call rt
+	imul rax,r12d,r13d
+	mov dword [mflos], eax
+	shr rax,32
+	mov dword [mflhis], eax
+	jmp casi
 
-
-
-
-
-
-
+mflo:
+	call rd 
+	mov r11d,[mflos]
+	jmp casi
+mfhi:
+	call rd
+	mov r11d,[mfhis]
+	jmp casi
 
 
 
