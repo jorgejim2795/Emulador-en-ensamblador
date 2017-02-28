@@ -15,6 +15,8 @@ section .data
 	lRFind: equ $- RFind
 	msj db "Presione Enter para continuar:",0xa
 	lmsj: equ $- msj
+	msj1 db "Presione Enter para salir:",0xa
+	lmsj1: equ $- msj1
 	int1: db "Jorge Jimenez Mora       2014085036",0xa
 	len1: equ $-int1
 	int2: db "Jose Hernandez Castro    2014086307",0xa
@@ -28,7 +30,7 @@ section .bss
 	data resb 400 ;memoria de datos
 	stack resb 400 ; capacidad de cien palabras
 	reg resb 128    ;banco de registros
-
+	tecla resb 16
 	PC resb 4      ;registro para pc
 	mflos resb 4	;registro para guardar los valores en operacion mult
 	mfhis resb 4 	;registro para guardar los valores en operacion mult
@@ -38,10 +40,28 @@ section .text
 _start:
 	mov dword [PC], 0
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
-	mov rdi, rax; sys write
+	mov rdi, 1; sys write
 	mov rax, 1
 	mov rsi, welcome
 	mov rdx, lwelcome
+	syscall
+ 
+	mov rdi, 1; sys write	
+	mov rax, 1
+	mov rsi, int2
+	mov rdx, len2
+	syscall
+	
+	mov rdi, 1; sys write	
+	mov rax, 1
+	mov rsi, bienv3
+	mov rdx, lbienv3
+	syscall
+
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, busqR
+	mov rdx, lbusqR
 	syscall
 ;-----------------------------------------------OBTENCION Y ESCRITURA DE LA ROM------------------------------------------------
 ;funcion para abrir el doc	
@@ -56,20 +76,36 @@ _start:
 	mov rdi, rax
 	mov rax, 0 ; sys read
 	mov rsi, text
-	mov rdx, 609
+	mov rdx, 4950
 	syscall
+;si no se encuentra la rom se sale
+	mov r14,[text]
+	cmp r14,0
+	je salida
+	
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, RFind
+	mov rdx, lRFind
+	syscall
+;muestra buscando archivo rom
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msj
+	mov rdx, lmsj
+	syscall
+	mov rax,0
+	mov rdi,0
+	mov rsi,tecla
+	mov rdx, 16
+	syscall
+
 
 ;funcion para cerrar el doc
 	mov rax, 3 ; sys close
 	pop rdi
 	syscall
-;-----------------------------------------------PARA ESCRIBIR EN PANTALLA--------------------------------------------------------
-;funcion de escritura en pantalla 
-	mov rdi, rax; sys write	
-	mov rax, 1
-	mov rsi, text
-	mov rdx, 609
-	syscall
+
 ;--------------------------------------OBTENCION DE LAS FUNCIONES MIPS A PARTIR DE LA ROM---------------------------------------- 
 ;funcion para llenar mem
 
@@ -120,6 +156,10 @@ lop:
 	call opcode					;llama la funcion de opcode para saber el tipo de instruccion MIPS (R,I,J)
 	cmp r10d,0					;Compara si es cero de ser asi es una tipo R
 	je Rformat					;brinca a las instrucciones tipo R
+	cmp r10d, 2h					;compara si el opcode es del J
+	je j						;brinca a la instruccion jump
+	;cmp r10d,3h					;compara si el opcode es del JAL
+	;je jal						;brinca a la funcion jump and link
 	jmp Iformat					;brinca a las instrucciondes tipo I
 						
 casi:							;Funcion de PC+4
@@ -128,7 +168,51 @@ casi:							;Funcion de PC+4
 	mov dword [PC],eax				;guardo el PC actualizado
 	cmp eax,600					;comparo si ya termino de recorrer la memoria del programa
 	jne lop						;brinco a lop para realizar la siguiente instruccion MIPS
+	
+;------------------------------------------------------------Imprecion del mensaje de salida---------------------------------------
+salida:
+	mov r8,[PC]
+	cmp r8,0
+	jne sis
+	
+	
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, RNoFind
+	mov rdx, lRNoFind
+	syscall
+	
 
+sis:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msj1
+	mov rdx, lmsj1
+	syscall
+	
+	mov rdi, 0				; sys write	
+	mov rax, 0
+	mov rsi, tecla
+	mov rdx, 16
+	syscall
+
+	mov rdi, 1; sys write
+	mov rax, 1
+	mov rsi, int1
+	mov rdx, len1
+	syscall
+
+	mov rdi, 1; sys write
+	mov rax, 1
+	mov rsi, int2
+	mov rdx, len2
+	syscall
+
+	mov rdi, 1; sys write
+	mov rax, 1
+	mov rsi, int3
+	mov rdx, len3
+	syscall
 ;--------------------------------------------------------------salir del programa (el loop es muy raro XD)
 	mov rax, 60					;sys_exit
 	mov rdi, 0
@@ -149,8 +233,8 @@ rs:
 	shr r9d,21					;corrimiento a la derecha para dejar el valor del RS en lo mas significativo
 	and r9d,31					;limpio el resto del registro a partir del 5bit dejando solo rs
 	shl r9d,2					;multiplico RS por 4 para direccionar bytes en memoria
-	mov dword [reg+r9d],4				;extraigo el valor continido en la direccion de memoria correspondiente a RS
-	mov r12d,[reg+r9d]				;guardo el valor obtenido en r12d 
+	mov dword [reg+r9d],4				
+	mov r12d,[reg+r9d]				;extraigo el valor continido en la direccion de memoria correspondiente a RS
 	ret						;regreso donde se llamó
 rt:
 	mov r8,[PC]					;Optengo el PC 
@@ -158,8 +242,8 @@ rt:
 	shr r9d,16					;corrimiento a la derecha para dejar el valor del RT en lo mas significativo
 	and r9d,31					;limpio el resto del registro a partir del 5bit dejando solo RT
 	shl r9d,2					;multiplico RT por 4 para direccionar bytes en memoria
-	mov dword [reg+r9d],8				;extraigo el valor continido en la direccion de memoria correspondiente a RT
-	mov r13d,[reg+r9d]				;guardo el valor obtenido en r13d
+	mov dword [reg+r9d],8				
+	mov r13d,[reg+r9d]				;extraigo el valor continido en la direccion de memoria correspondiente a RT
 	ret						;regreso donde se llamó
 rd:
 	mov r8,[PC]					;Optengo el PC 
@@ -191,6 +275,13 @@ imm:
 	and r9d,65535					;enmascaro unicamente los 16 bits del IMMEDITE
 	mov r13d, r9d					;guardo el immedite en r13d
 	ret						;regreso dende me llamo
+address:
+	mov r8, [PC]					;optengo el PC
+	mov r9d,[mem+r8]				;Me muevo en la memoria de programa con el offset del PC
+	and r9d,03ffffffh				;enmascaro unicamente los 26 bits del address
+	mov r13d, r9d					;guardo el address en r13d
+	ret						;regreso donde se llamo
+	
 	
 ;------------------------------------------------------- define cual funcion r se ejecuta
 Rformat:
@@ -208,6 +299,12 @@ Rformat:
 	je srl						;brinca al srl
 	cmp r15d, 22h					;funcion del sub
 	je sub						;brinca al sub
+	cmp r15d,18h					;funcion del mult
+	je mult						;brinca al mult
+	cmp r15d,10h					;funcion del mfhi
+	je mfhi						;brinca mfhi
+	cmp r15d,12h					;funcion del mflo
+	je mflo						;brinca a mflo
 	jmp casi					;regresa para realizar el PC+4
 
 
@@ -299,7 +396,7 @@ ori:
 jr:
 	call rs						;Llamo a RS
 	mov dword [PC],r12d 				;rt=rs or imm----muevo la direccion contenida en $ra al PC
-	jmp casi					;Voy a la parte de codigo donde hago PC+4
+	jmp lop						;a lop sin hacer PC+4
 
 slt:
 	call rs						;Llamo a RS
@@ -316,10 +413,8 @@ poneuno:
 mult:
 	call rs						;Llamo a RS
 	call rt						;Llamo a RT
-	imul rax,r12d,r13d				;realizo la multiplicacion
-	mov dword [mflos], eax				;guardo la parte low de la multiplicacion al registro mflo
-	shr rax,32					;realizo un corrimiento para dejar los 32 bits mas significativos nada mas
-	mov dword [mflhis], eax				;guardo la parte hight de la multiplicacion al registro mfhi
+	imul r12,r13					;realizo la multiplicacion
+	mov dword [mflos],r12d
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 mflo:
@@ -331,4 +426,49 @@ mfhi:
 	mov r11d,[mfhis]				;muevo el registro HIGHT de la multiplicacion  a RD
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
+j:
+	call address					;llamo al address
+	shl r13d,2					;hago un corrimiento al address
+	mov r9d,[PC]					;optengo el pc
+	and r9d,0f0000000h				;aplico mascara para obtener los 4 bits mas significativos del PC
+	or r13d,r9d					;concateno los 4 bits del PC con el Address 
+	mov dword [PC],r13d				;guardo la diresccion optenida en el PC
+	jmp lop						;voy a realizar la instruccion indicada
+beq:
+	call rs						;llamo a RS
+	call rt						;Llamo a RT
+	cmp r12d,r13d					;comparo r12d con r13d
+	jne casi					;brinque a casi si no se cumple la condicion 
+	call imm					;optengo el immediate o direccion
+	shl r13d, 2					;multiplico por 4 para moverme en memoria
+	mov eax, [PC]					;cargo la direccion en PC
+	add eax, r13d					;sumo el immediate al PC
+	mov dword [PC], eax				;guardo el nuevo PC
+	jmp casi					;realizo un PC+4					
+
+bne:
+	call rs
+	call rt
+	cmp r12d,r13d
+	je casi
+	call imm
+	shl r13d, 2
+	mov eax, [PC]
+	add eax, r13d
+	mov dword [PC], eax
+	jmp casi
+lw:
+	call rs
+	call imm
+	add r12d, r13d
+	shl r12d,2
+	mov eax, 5
+	mov dword [data+r12d], eax	
+	mov r9d, [data+r12d]
+	call rt
+	mov dword [reg+r13d],r9d ;
+	mov r11d, [reg+r13d]
+	jmp casi
+
+	
 
