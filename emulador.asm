@@ -1,6 +1,7 @@
-
+%include "linux64.inc"
 section .data
 	filename db "ROM.txt",0
+	filename2 db "gggg.txt",0
 	welcome db 'Bienvenido al Emulador MIPS', 0xa
 	lwelcome equ $- welcome
 	bienv2 db 'EL-4313-Lab. Estructura de Microprocesadores', 0xa
@@ -40,29 +41,45 @@ section .text
 _start:
 	mov dword [PC], 0
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
+	
+	mov rax, 2
+	mov rdi, filename2
+	mov rsi,64 + 1
+	mov rdx,0644o
+	syscall
+
 	mov rdi, 1; sys write
 	mov rax, 1
 	mov rsi, welcome
 	mov rdx, lwelcome
 	syscall
- 
+
+	Wfile welcome, lwelcome
+
 	mov rdi, 1; sys write	
 	mov rax, 1
 	mov rsi, int2
 	mov rdx, len2
 	syscall
-	
+
+	Wfile int2,len2
+
 	mov rdi, 1; sys write	
 	mov rax, 1
 	mov rsi, bienv3
 	mov rdx, lbienv3
 	syscall
 
+	Wfile bienv3,lbienv3
+
 	mov rdi, 1				; sys write	
 	mov rax, 1
 	mov rsi, busqR
 	mov rdx, lbusqR
 	syscall
+
+	Wfile busqR,lbusqR
+
 ;-----------------------------------------------OBTENCION Y ESCRITURA DE LA ROM------------------------------------------------
 ;funcion para abrir el doc	
 	mov rax, 2 ;sys open
@@ -88,6 +105,8 @@ _start:
 	mov rsi, RFind
 	mov rdx, lRFind
 	syscall
+
+	Wfile RFind,lRFind
 ;muestra buscando archivo rom
 	mov rdi, 1				; sys write	
 	mov rax, 1
@@ -181,6 +200,7 @@ salida:
 	mov rsi, RNoFind
 	mov rdx, lRNoFind
 	syscall
+	Wfile RNoFind,lRNoFind
 	
 
 sis:
@@ -190,6 +210,8 @@ sis:
 	mov rdx, lmsj1
 	syscall
 	
+	Wfile msj1,lmsj1
+
 	mov rdi, 0				; sys write	
 	mov rax, 0
 	mov rsi, tecla
@@ -202,16 +224,27 @@ sis:
 	mov rdx, len1
 	syscall
 
+	Wfile int1,len1
+
 	mov rdi, 1; sys write
 	mov rax, 1
 	mov rsi, int2
 	mov rdx, len2
 	syscall
 
+
+	Wfile int2,len2
+
 	mov rdi, 1; sys write
 	mov rax, 1
 	mov rsi, int3
 	mov rdx, len3
+	syscall
+
+	Wfile int3,len3	
+
+	mov rax, 3
+	pop rdi
 	syscall
 ;--------------------------------------------------------------salir del programa (el loop es muy raro XD)
 	mov rax, 60					;sys_exit
@@ -470,5 +503,8 @@ lw:
 	mov r11d, [reg+r13d]
 	jmp casi
 
+
+
 	
+
 

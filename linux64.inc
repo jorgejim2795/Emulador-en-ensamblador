@@ -1,42 +1,9 @@
-section .data
-	filename db "resultado.txt",0
-
 section .bss
     digitSpace resb 100
     digitSpacePos resb 8
     printSpace resb 8
 
-%macro Cfile 0
-	mov rax, SYS_OPEN
-	mov rdi, filename
-	mov rsi, O_CREAT+O_WRONLY
-	mov rdx, 0644o
-	syscall
-	
-	mov rax, SYS_CLOSE
-	pop rdi
-	syscall
 
-%endmacro
-
-%macro Wfile 2
-	mov rax, SYS_OPEN
-	mov rdi, filename
-	mov rsi, O_WRONLY
-	syscall
-
-	push rax
-	mov rdi,rax
-	mov rax, SYS_WRITE
-	mov rsi, %1
-	mov rdx, %2
-	syscall
-
-	mov rax, SYS_CLOSE
-	pop rdi
-	syscall
-
-%endmacro
 
 %macro print 1
     mov rax, %1
@@ -108,6 +75,15 @@ section .bss
     syscall
 %endmacro
  
+%macro Wfile 2
+	push rax
+	mov rdi, rax
+	mov rax, 1
+	mov rsi,%1
+	mov rdx, %2
+	syscall
+%endmacro
+
 STDIN_FILENO    equ 0
 STDOUT_FILENO   equ 1
 STDERR_FILENO   equ 2
