@@ -24,12 +24,12 @@ section .data
 	len2: equ $-int2
 	int3: db "Gabino Venegas Rodriguez 2014013616",0xa
 	len3: equ $-int3
-	msjdirec db "direccion invadila ",0xa
+	msjdirec db "direccion invalida ",0xa
+	lmsjdirec equ $- msjdirec
 	msjfun db "funcion invalido ",0xa
+	lmsjfun equ $- msjfun
 	msjopcode db "opcode invalido ",0xa
-	lmsjdirec: equ $- msjdirec
-	lmsjfun: equ $- msjfun
-	lmsjopcode: equ $- msjopcode
+	lmsjopcode equ $- msjopcode
 
 
 section .bss
@@ -188,8 +188,9 @@ lop:
 	je Rformat					;brinca a las instrucciones tipo R
 	cmp r10d,2h					;compara si el opcode es del J
 	je j						;brinca a la instruccion jump
-	cmp r10d,3h					;compara si el opcode es del JAL
-	je jal						;brinca a la funcion jump and link
+	cmp r10d,3h					;compara si el opcode es del 
+
+	je jaal						;brinca a la funcion jump and link
 	jmp Iformat					;brinca a las instrucciondes tipo I
 						
 casi:							;Funcion de PC+4
@@ -211,34 +212,6 @@ salida:
 	mov rsi, RNoFind
 	mov rdx, lRNoFind
 	syscall
-
-invfun:
-	mov rdi, 1				; sys write	
-	mov rax, 1
-	mov rsi, msjfun
-	mov rdx, lmsjfun
-	syscall
-	nop
-	jmp _salir
-
-
-invopcode:
-	mov rdi, 1				; sys write	
-	mov rax, 1
-	mov rsi, msjopcode
-	mov rdx, lmsjopcode
-	syscall
-	nop
-	jmp _salir
-
-invdirec:
-	mov rdi, 1				; sys write	
-	mov rax, 1
-	mov rsi, msjdirec
-	mov rdx, lmsjdirec
-	syscall
-	nop
-	jmp _salir 
 	
 
 sis:
@@ -286,7 +259,34 @@ sis:
 	pop rdi
 	syscall
 ;--------------------------------------------------------------salir del programa (el loop es muy raro XD)
-_salir:	mov rax, 60					;sys_exit
+invfun:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msjfun
+	mov rdx, lmsjfun
+	syscall
+	jmp _salir
+
+
+invopcode:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msjopcode
+	mov rdx, lmsjopcode
+	syscall
+	jmp _salir
+
+invdirec:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msjdirec
+	mov rdx, lmsjdirec
+	syscall
+
+_salir:
+	mov rsi, 0
+	mov rdx, 0	
+	mov rax, 60					;sys_exit
 	mov rdi, 0
 	syscall
 
@@ -305,8 +305,7 @@ rs:
 	mov r9d,[mem+r8]				;Me muevo en la memoria de programa con el offset del PC	
 	shr r9d,21					;corrimiento a la derecha para dejar el valor del RS en lo mas significativo
 	and r9d,31					;limpio el resto del registro a partir del 5bit dejando solo rs
-	shl r9d,2					;multiplico RS por 4 para direccionar bytes en memoria
-	mov dword [reg+r9d],4				
+	shl r9d,2					;multiplico RS por 4 para direccionar bytes en memoria			
 	mov r12d,[reg+r9d]				;extraigo el valor continido en la direccion de memoria correspondiente a RS
 	ret						;regreso donde se llamó
 rt:
@@ -314,8 +313,7 @@ rt:
 	mov r9d,[mem+r8]				;Me muevo en la memoria de programa con el offset del PC	
 	shr r9d,16					;corrimiento a la derecha para dejar el valor del RT en lo mas significativo
 	and r9d,31					;limpio el resto del registro a partir del 5bit dejando solo RT
-	shl r9d,2					;multiplico RT por 4 para direccionar bytes en memoria
-	mov dword [reg+r9d],8				
+	shl r9d,2					;multiplico RT por 4 para direccionar bytes en memoria				
 	mov r13d,[reg+r9d]				;extraigo el valor continido en la direccion de memoria correspondiente a RT
 	ret						;regreso donde se llamó
 rd:
@@ -475,8 +473,8 @@ ori:
 	call rs						;Llamo a RS
 	call imm					;Llamo a IMMEDITE
 	or r12d,r13d					;aplico el or con el dato ingresado
-	call rd						;llamo a RD
-	mov dword [reg+r11d],r12d 			;rt=rs or imm			
+	call rt						;llamo a RD
+	mov dword [reg+r9d],r12d 			;rt=rs or imm			
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 jr:
@@ -490,10 +488,10 @@ slt:
 	call rd						;Llamo a RD
 	cmp r12d,r13d					;comparo lo contenido en RD y RT
 	jl poneuno					;si se cumple voy a agregar un 1
-	mov r11d,0					;pongo 0 si la condicion no se cumple
+	mov dword [reg+r11d], 0					;pongo 0 si la condicion no se cumple
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 poneuno:
-	mov r11d,1					;pongo 1 si la condicion se cumple
+	mov dword [reg+r11d],1					;pongo 1 si la condicion se cumple
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 mult:
@@ -558,10 +556,10 @@ sw:
 	mov dword [data+r12d],r13d ;			;guarda rt en memoria
 	jmp casi
 
-jal:	
+jaal:	
 	call address					;llamo al address
 	shl r13d,2					;hago un corrimiento al address
-	cmp r13d, 600d					;compara con la mayor direccion 
+	cmp r13d, 600					;compara con la mayor direccion 
 	jge invdirec					;inidca que la direccion no es valida
 	mov r9d,[PC]					;optengo el pc
 	mov [reg+124],r9d				;guardo el pc actual en el $ra registro 31 
