@@ -24,22 +24,37 @@ section .data
 	len2: equ $-int2
 	int3: db "Gabino Venegas Rodriguez 2014013616",0xa
 	len3: equ $-int3
+	msjdirec db "direccion invadila ",0xa
+	msjfun db "funcion invalido ",0xa
+	msjopcode db "opcode invalido ",0xa
+	lmsjdirec: equ $- msjdirec
+	lmsjfun: equ $- msjfun
+	lmsjopcode: equ $- msjopcode
+
 
 section .bss
 	text resb 4950 ;rom
 	mem resb 600   ;memoria de programa
-	data resb 400 ;memoria de datos
-	stack resb 400 ; capacidad de cien palabras
+	data resb 800 ;memoria de datos y stack unidos 0-400 memoria 401-800 stack
+	laweva resb 400 ; A JORGE LE DA MIEDO QUE SU CODIGO CAIGA xd
 	reg resb 128    ;banco de registros
 	tecla resb 16
 	PC resb 4      ;registro para pc
-	mflos resb 4	;registro para guardar los valores en operacion mult
-	mfhis resb 4 	;registro para guardar los valores en operacion mult
-	
+	frs resb 8
+	prueba resb 4 
 section .text
 	global _start
 _start:
 	mov dword [PC], 0
+	mov dword [reg+116],800d
+	mov dword [reg+192],1d
+	mov dword [reg+196],2d
+	mov dword [reg+200],3d
+	mov dword [reg+204],4d
+	mov dword [reg+208],5d
+	mov dword [reg+212],6d
+	mov dword [reg+216],7d
+	mov dword [reg+220],8d
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
 	
 	mov rax, 2
@@ -56,13 +71,12 @@ _start:
 
 	Wfile welcome, lwelcome
 
+
 	mov rdi, 1; sys write	
 	mov rax, 1
-	mov rsi, int2
-	mov rdx, len2
+	mov rsi, bienv2
+	mov rdx, lbienv2
 	syscall
-
-	Wfile int2,len2
 
 	mov rdi, 1; sys write	
 	mov rax, 1
@@ -70,15 +84,12 @@ _start:
 	mov rdx, lbienv3
 	syscall
 
-	Wfile bienv3,lbienv3
-
 	mov rdi, 1				; sys write	
 	mov rax, 1
 	mov rsi, busqR
 	mov rdx, lbusqR
 	syscall
 
-	Wfile busqR,lbusqR
 
 ;-----------------------------------------------OBTENCION Y ESCRITURA DE LA ROM------------------------------------------------
 ;funcion para abrir el doc	
@@ -106,7 +117,7 @@ _start:
 	mov rdx, lRFind
 	syscall
 
-	Wfile RFind,lRFind
+
 ;muestra buscando archivo rom
 	mov rdi, 1				; sys write	
 	mov rax, 1
@@ -175,10 +186,10 @@ lop:
 	call opcode					;llama la funcion de opcode para saber el tipo de instruccion MIPS (R,I,J)
 	cmp r10d,0					;Compara si es cero de ser asi es una tipo R
 	je Rformat					;brinca a las instrucciones tipo R
-	cmp r10d, 2h					;compara si el opcode es del J
+	cmp r10d,2h					;compara si el opcode es del J
 	je j						;brinca a la instruccion jump
-	;cmp r10d,3h					;compara si el opcode es del JAL
-	;je jal						;brinca a la funcion jump and link
+	cmp r10d,3h					;compara si el opcode es del JAL
+	je jal						;brinca a la funcion jump and link
 	jmp Iformat					;brinca a las instrucciondes tipo I
 						
 casi:							;Funcion de PC+4
@@ -200,7 +211,34 @@ salida:
 	mov rsi, RNoFind
 	mov rdx, lRNoFind
 	syscall
-	Wfile RNoFind,lRNoFind
+
+invfun:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msjfun
+	mov rdx, lmsjfun
+	syscall
+	nop
+	jmp _salir
+
+
+invopcode:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msjopcode
+	mov rdx, lmsjopcode
+	syscall
+	nop
+	jmp _salir
+
+invdirec:
+	mov rdi, 1				; sys write	
+	mov rax, 1
+	mov rsi, msjdirec
+	mov rdx, lmsjdirec
+	syscall
+	nop
+	jmp _salir 
 	
 
 sis:
@@ -210,7 +248,7 @@ sis:
 	mov rdx, lmsj1
 	syscall
 	
-	Wfile msj1,lmsj1
+
 
 	mov rdi, 0				; sys write	
 	mov rax, 0
@@ -218,13 +256,14 @@ sis:
 	mov rdx, 16
 	syscall
 
+
 	mov rdi, 1; sys write
 	mov rax, 1
 	mov rsi, int1
 	mov rdx, len1
 	syscall
 
-	Wfile int1,len1
+
 
 	mov rdi, 1; sys write
 	mov rax, 1
@@ -233,7 +272,7 @@ sis:
 	syscall
 
 
-	Wfile int2,len2
+
 
 	mov rdi, 1; sys write
 	mov rax, 1
@@ -241,13 +280,13 @@ sis:
 	mov rdx, len3
 	syscall
 
-	Wfile int3,len3	
+
 
 	mov rax, 3
 	pop rdi
 	syscall
 ;--------------------------------------------------------------salir del programa (el loop es muy raro XD)
-	mov rax, 60					;sys_exit
+_salir:	mov rax, 60					;sys_exit
 	mov rdi, 0
 	syscall
 
@@ -260,6 +299,7 @@ opcode:
 	and r9d,63					;limpio el resto del registro por si acaso.
 	mov r10d,r9d					;guardo el OPCODE en r10d
 	ret						;regreso donde se llamó
+
 rs:
 	mov r8,[PC]					;Optengo el PC
 	mov r9d,[mem+r8]				;Me muevo en la memoria de programa con el offset del PC	
@@ -284,6 +324,8 @@ rd:
 	shr r9d,11					;corrimiento a la derecha para dejar el valor del RD en lo mas significativo
 	and r9d,31					;limpio el resto del registro a partir del 5bit dejando solo RD
 	shl r9d,2					;multiplico RT por 4 para direccionar bytes en memoria
+	cmp r9d,0					;compara con $zero
+	je casi						;brinca pc+4 xq $zero no se puede modificar 
 	mov r11d,r9d					;guardo el valor obtenido en r11d
 	ret						;regreso donde se llamó
 
@@ -319,36 +361,47 @@ address:
 ;------------------------------------------------------- define cual funcion r se ejecuta
 Rformat:
 	call func
-	cmp r15d,20h					;funcion del add
+	cmp r15d, 20h					;funcion del add
 	je add						;brinca al add
 	cmp r15d, 0h					;funcion del sll
 	je sll						;brinca al sll
-	call func					;
-	cmp r15d,25h					;funcion del or
+	cmp r15d, 25h					;funcion del or
 	je or						;brinca al or
 	cmp r15d, 27h					;funcion del nor
 	je sll						;brinca al nor
-	cmp r15d,02h					;funcion del srl
+	cmp r15d, 02h					;funcion del srl
 	je srl						;brinca al srl
 	cmp r15d, 22h					;funcion del sub
 	je sub						;brinca al sub
-	cmp r15d,18h					;funcion del mult
+	cmp r15d, 18h					;funcion del mult
 	je mult						;brinca al mult
-	cmp r15d,10h					;funcion del mfhi
-	je mfhi						;brinca mfhi
-	cmp r15d,12h					;funcion del mflo
+	cmp r15d, 08h					;funcion del jr
+	je jr						;brinca jr
+	cmp r15d, 12h					;funcion del mflo
 	je mflo						;brinca a mflo
-	jmp casi					;regresa para realizar el PC+4
+	jmp invfun					;inidica function invalido
 
 
 ;--------------------------------------------------------define cual funcion i se ejecuta
 Iformat:
-	cmp r10d, 8h					;funcion del addi
+	cmp r10d, 8h					;opcode del addi
 	je addi						;brinque al addi
-	cmp r10d, 0ch					;funcion del andi
+	cmp r10d, 0ch					;opcode del andi
 	je andi						;brinca al andi
-	cmp r10d, 0dh					;funcion del ori
+	cmp r10d, 0dh					;opcode del ori
 	je ori						;brinca al ori
+	cmp r10d, 4h					;opcode del beq
+	je beq						;brinca al beq
+	cmp r10d, 5h					;opcode del bne
+	je bne						;brinca al bne
+	cmp r10d, 23h					;opcode del lw
+	je lw						;brinca al lw
+	cmp r10d, 0ah					;opcode del slti
+	je slti						;brinca al slti
+	cmp r10d, 02bh					;opcode del sw
+	je sw						;brinca al sw
+	jmp invopcode					;indica qeu el opcode es invalido
+
 
 ;------------------------------------------------------- funciones emulades de mips
 add:
@@ -446,27 +499,24 @@ poneuno:
 mult:
 	call rs						;Llamo a RS
 	call rt						;Llamo a RT
-	imul r12,r13					;realizo la multiplicacion
-	mov dword [mflos],r12d
+	imul r12d,r13d					;realizo la multiplicacion
+	mov [prueba], r12d
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 mflo:
 	call rd						;Llamo a RD
-	mov r11d,[mflos]				;muevo el registro LOW de la multiplicacion  a RD
-	jmp casi					;Voy a la parte de codigo donde hago PC+4
-mfhi:
-	call rd						;Llamo a RD
-	mov r11d,[mfhis]				;muevo el registro HIGHT de la multiplicacion  a RD
+	mov r11d,[prueba]				;muevo el registro LOW de la multiplicacion  a RD
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 j:
 	call address					;llamo al address
+prueba2:
 	shl r13d,2					;hago un corrimiento al address
-	mov r9d,[PC]					;optengo el pc
-	and r9d,0f0000000h				;aplico mascara para obtener los 4 bits mas significativos del PC
-	or r13d,r9d					;concateno los 4 bits del PC con el Address 
-	mov dword [PC],r13d				;guardo la diresccion optenida en el PC
-	jmp lop						;voy a realizar la instruccion indicada
+	cmp r13d, 600d					;compara con la mayor direccion 
+	jge invdirec					;inidca que la direccion no es valida
+	mov dword [PC],r13d				;guardo la direccion optenida en el PC
+	jmp lop						;ejecuta la instruccion 
+
 beq:
 	call rs						;llamo a RS
 	call rt						;Llamo a RT
@@ -491,20 +541,65 @@ bne:
 	mov dword [PC], eax
 	jmp casi
 lw:
-	call rs
-	call imm
-	add r12d, r13d
-	shl r12d,2
-	mov eax, 5
-	mov dword [data+r12d], eax	
-	mov r9d, [data+r12d]
-	call rt
-	mov dword [reg+r13d],r9d ;
-	mov r11d, [reg+r13d]
+	call rs						;llama rs
+	call imm					;llama el immediate
+	add r12d, r13d					;los suma
+	shl r12d,2					;multiplica por 4			
+	mov r9d, [data+r12d]				;muev el dato a un registro
+	call rt						;llama rt
+	mov dword [reg+r13d],r9d ;			;guarda en rt
+	jmp casi
+sw:
+	call rs						;llama rs
+	call imm					;llama el immediate
+	add r12d, r13d					;los suma
+	shl r12d,2					;multiplica por 4			
+	call rt						;llama rt
+	mov dword [data+r12d],r13d ;			;guarda rt en memoria
 	jmp casi
 
+jal:	
+	call address					;llamo al address
+	shl r13d,2					;hago un corrimiento al address
+	cmp r13d, 600d					;compara con la mayor direccion 
+	jge invdirec					;inidca que la direccion no es valida
+	mov r9d,[PC]					;optengo el pc
+	mov [reg+124],r9d				;guardo el pc actual en el $ra registro 31 
+	mov dword [PC],r13d				;guardo la direccion optenida en el PC
+	jmp lop						;va a la direccion 
 
+slti:
+	call rs						;Llamo a RS
+	call imm					;Llamo a immediate
+	call rd						;Llamo a RD
+	cmp r12d,r13d					;comparo lo contenido en RS y RT
+	jl pone1					;si se cumple voy a agregar un 1
+	mov r11d,0					;pongo 0 si la condicion no se cumple
+	jmp casi					;Voy a la parte de codigo donde hago PC+4
+pone1:
+	mov r11d,1				 	;pongo 1 si la condicion se cumple
+	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
+;00001000000000000000000000001100
+
+;00100011101111011111111111111000
+;00100000100010001111111111111111
+;10101111101010000000000000000000
+;10101111101111110000000000000100
+;00010100100000000000000000000011
+;00000000000000000001000000100000
+;00100011101111010000000000001000
+;00000011111000000000000000001000
+;00000000000010000010100000100000
+;00001100000000000000000000000000
+;10001111101010000000000000000000
+;00000000000010000100100100000000
+;00000000100010010100100000100000
+;10001101001010100000000000000000
+;00000000010010100001000000100000
+;10001111101111110000000000000100
+;00100011101111010000000000001000
+;00000011111000000000000000001000
 	
-
+;00000000010010100001000000100000
 
