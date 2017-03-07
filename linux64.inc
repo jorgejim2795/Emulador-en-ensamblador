@@ -84,6 +84,29 @@ section .bss
 	syscall
 %endmacro
 
+%macro register 1
+	cmp %1,0
+	jne _con4
+	mov rdi, 1					; sys write
+	mov rax, 1
+	mov rsi, regis
+	mov rdx, 6
+	syscall
+_con4:
+	mov r15d,%1
+	shl r15d,2
+	sub r15d,4
+	mov rdi, 1					; sys write
+	mov rax, 1
+	mov rsi, regis+r15d
+	mov rdx, 4
+	syscall
+	ret
+%endmacro
+
+
+
+
 STDIN_FILENO    equ 0
 STDOUT_FILENO   equ 1
 STDERR_FILENO   equ 2
