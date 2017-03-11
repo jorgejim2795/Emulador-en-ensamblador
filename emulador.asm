@@ -9,6 +9,7 @@ section .data
 	par1 db "("
 	par2 db ")"	
 	filename db "ROM.txt",0
+	filename2 db "resultado.txt",0
 	welcome db 'Bienvenido al Emulador MIPS', 0xa
 	lwelcome equ $- welcome
 	bienv2 db 'EL-4313-Lab. Estructura de Microprocesadores', 0xa
@@ -42,7 +43,7 @@ section .data
 	msjinvcar db "caracter no valido en la rom",0xa
 	lmsjinvcar: equ $-msjinvcar
 	cadena:  db "lscpu | grep ID ; lscpu | grep name ; lscpu | grep Fam ; lscpu | grep Ar ; top -bn1 | grep 'Cpu(s)' ",0xa
-	
+	cadena1:  db "lscpu | grep ID >> resultado.txt ; lscpu | grep name >> resultado.txt ; lscpu | grep Fam >> resultado.txt ; lscpu | grep Ar >> resultado.txt ; top -bn1 | grep 'Cpu(s)' >> resultado.txt ",0xa
 section .bss
 	text resb 4950 ;rom
 	mem resb 600   ;memoria de programa
@@ -56,6 +57,17 @@ section .bss
 section .text
 	global main
 main:
+;------------------------------se crea el resultado.txt para guardar los datos de pantalla	
+	mov rax, SYS_OPEN
+	mov rdi, filename2
+	mov rsi, O_CREAT+O_TRUNC
+	mov rdx, 0644o
+	syscall
+
+	mov rax, SYS_CLOSE
+	pop rdi
+	syscall
+;------------------------------------------------------------
 	mov dword [PC], 0		;inicializo el pc en 0
 	mov dword [reg+0],0		;$zero en 0
 	mov dword [reg+116],800d	;$sp en el limite de la memoria 
@@ -72,34 +84,34 @@ main:
 	mov dword [reg+124],600d		;$ra inicial es igual a la direccion limite del pc para salir del progrma despues de la ejecuccion
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
 
-;------------------------------se crea el resultado.txt para guardar los datos de pantalla	
 
-;------------------------------------------------------------
 ;--------------imprime la bienvenida------------
 	mov rdi, 1					; sys write
 	mov rax, 1
 	mov rsi, welcome				;Bienvanido al emulador MIPS
 	mov rdx, lwelcome				;tamaño del mensaje
 	syscall
-
+	
+	Wfile welcome,lwelcome
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, bienv2					;codigo del curso
 	mov rdx, lbienv2				;tamaño del codigo del curso
 	syscall
 
+	Wfile bienv2,lbienv2
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, bienv3					;semestre y año
 	mov rdx, lbienv3				;tamaño del semestre
 	syscall
-
+	Wfile bienv3,lbienv3
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, busqR					;buscando ROM.txt
 	mov rdx, lbusqR					;tamaño de buscando ROM
 	syscall
-
+	Wfile busqR,lbusqR
 
 ;-----------------------------------------------OBTENCION Y ESCRITURA DE LA ROM------------------------------------------------
 ;----------funcion para abrir el doc-------------------
@@ -134,6 +146,8 @@ main:
 	mov rsi, msj					;presione entre para continuar
 	mov rdx, lmsj					;tamaño del mensaje
 	syscall
+	Wfile msj,lmsj
+	Wfile enteer,1
 ;-----para reconocer el enter----
 	mov rax,0
 	mov rdi,0
@@ -234,6 +248,7 @@ salida:
 	mov rax, 1
 	mov rsi, RNoFind
 	mov rdx, lRNoFind
+	Wfile RNoFind,lRNoFind
 	syscall
 ;------------------------------------------------------------------------
 ; funcion para imprimir los requerimientos al final del programa
@@ -244,13 +259,13 @@ sis:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-
+	Wfile enteer,1
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, msj1
 	mov rdx, lmsj1
 	syscall
-	
+	Wfile msj1,lmsj
 
 
 	mov rdi, 0					; sys write	
@@ -265,7 +280,7 @@ sis:
 	mov rsi, int1
 	mov rdx, len1
 	syscall
-
+	Wfile int1,len1
 
 
 	mov rdi, 1; sys write
@@ -273,16 +288,15 @@ sis:
 	mov rsi, int2
 	mov rdx, len2
 	syscall
-
-
-
+	Wfile int2,len2
 
 	mov rdi, 1; sys write
 	mov rax, 1
 	mov rsi, int3
 	mov rdx, len3
 	syscall
-
+	Wfile int3,len3
+	
 	push rbp                                     
 	mov rbp, rsp                                
 	mov rdi, cadena                             
@@ -299,6 +313,7 @@ invcar:
 	mov rsi, msjinvcar
 	mov rdx, lmsjinvcar
 	syscall
+	Wfile msjinvcar,lmsjinvcar
 	jmp _salir
 
 	
@@ -311,6 +326,7 @@ invfun:
 	mov rsi, msjfun
 	mov rdx, lmsjfun
 	syscall
+	Wfile msjfun,lmsjfun
 	jmp _salir
 
 ;-------------------------------------------------
@@ -322,6 +338,7 @@ invopcode:
 	mov rsi, msjopcode
 	mov rdx, lmsjopcode
 	syscall
+	Wfile msjopcode,lmsjopcode
 	jmp _salir
 ;-------------------------------------------------
 ;mensaje indica direccion de memoria invalida
@@ -333,6 +350,7 @@ drinv:
 	mov rsi, msjdrinv
 	mov rdx, lmsjdrinv
 	syscall
+	Wfile msjdrinv,lmsjdrinv
 	jmp _salir
 ;-------------------------------------------------
 ;sale del programa
@@ -357,13 +375,172 @@ _register:
 	mov rsi, rcx
 	mov rdx, 3
 	syscall
+
+	cmp r15,0
+	je _at
+	cmp r15,4
+	je _v0
+	cmp r15,8
+	je _v1
+	cmp r15,12
+	je _a0
+	cmp r15,16
+	je _a1
+	cmp r15,20
+	je _a2
+	cmp r15,24
+	je _a3
+	cmp r15,28
+	je _t0
+	cmp r15,32
+	je _t1
+	cmp r15,36
+	je _t2
+	cmp r15,40
+	je _t3
+	cmp r15,44
+	je _t4
+	cmp r15,48
+	je _t5
+	cmp r15,52
+	je _t6
+	cmp r15,56
+	je _t7
+	cmp r15,60
+	je _s0
+	cmp r15,64
+	je _s1
+	cmp r15,68
+	je _s2
+	cmp r15,72
+	je _s3
+	cmp r15,76
+	je _s4
+	cmp r15,80
+	je _s5
+	cmp r15,84
+	je _s6
+	cmp r15,88
+	je _s7
+	cmp r15,92
+	je _t8
+	cmp r15,96
+	je _t9
+	cmp r15,100
+	je _k0
+	cmp r15,104
+	je _k1
+	cmp r15,108
+	je _gp
+	cmp r15,112
+	je _sp
+	cmp r15,116
+	je _fp
+	cmp r15,120
+	je _ra
 	ret
+	
+	
+_at:
+	Wfile regis,3
+	ret
+_v0:
+	Wfile regis+4,3
+	ret
+_v1:
+	Wfile regis+8,3
+	ret
+_a0:
+	Wfile regis+12,3
+	ret
+_a1:
+	Wfile regis+16,3
+	ret
+_a2:
+	Wfile regis+20,3
+	ret
+_a3:
+	Wfile regis+24,3
+	ret
+_t0:
+	Wfile regis+28,3
+	ret
+_t1:
+	Wfile regis+32,3
+	ret
+_t2:
+	Wfile regis+36,3
+	ret
+_t3:
+	Wfile regis+40,3
+	ret
+_t4:
+	Wfile regis+44,3
+	ret
+_t5:
+	Wfile regis+48,3
+	ret
+_t6:
+	Wfile regis+52,3
+	ret
+_t7:
+	Wfile regis+56,3
+	ret
+_s0:
+	Wfile regis+60,3
+	ret
+_s1:
+	Wfile regis+64,3
+	ret
+_s2:
+	Wfile regis+68,3
+	ret
+_s3:
+	Wfile regis+72,3
+	ret
+_s4:
+	Wfile regis+76,3
+	ret
+_s5:
+	Wfile regis+80,3
+	ret
+_s6:
+	Wfile regis+84,3
+	ret
+_s7:
+	Wfile regis+88,3
+	ret
+_t8:
+	Wfile regis+92,3
+	ret
+_t9:
+	Wfile regis+96,3
+	ret
+_k0:
+	Wfile regis+100,3
+	ret
+_k1:
+	Wfile regis+104,3
+	ret
+_gp:
+	Wfile regis+108,3
+	ret
+_sp:
+	Wfile regis+112,3
+	ret
+_fp:
+	Wfile regis+116,3
+	ret
+_ra:	
+	Wfile regis+120,3
+	ret	
 zz:
 	mov rdi, 1					; sys write
 	mov rax, 1
 	mov rsi, regiszero
 	mov rdx, 5
 	syscall
+	Wfile regiszero,5
 	ret
 
 
@@ -549,7 +726,7 @@ add:
 	mov rsi, instruc
 	mov rdx, 4
 	syscall
-
+	Wfile instruc,4
 	call rd						;Llamo a RT
 	mov r14,r11					;se mueve a r11
 ;---------------------imprime una coma
@@ -558,7 +735,7 @@ add:
 	mov rsi, coma
 	mov rdx, 1
 	syscall	
-
+	Wfile coma,1
 	call rs						;Llamo a rd	
 ;----------------------otra coma
 	mov rdi, 1					; sys write	
@@ -566,7 +743,7 @@ add:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rt						;llamo a RS
 	add r12,r13					;sumo los datos optenidos en RS y RT
 	mov dword [reg+r14],r12d			;guard la operacion de suma en el registro RD
@@ -577,7 +754,7 @@ add:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 and:
 ;----------------------imprime add
@@ -586,7 +763,7 @@ and:
 	mov rsi, instruc+14
 	mov rdx, 4
 	syscall
-
+	Wfile instruc+14,4
 	call rd						;Llamo a RT
 	mov r14,r11					;se mueve a r11
 ;---------------------imprime una coma
@@ -595,7 +772,7 @@ and:
 	mov rsi, coma
 	mov rdx, 1
 	syscall	
-
+	Wfile coma,1
 	call rs						;Llamo a rd	
 ;----------------------otra coma
 	mov rdi, 1					; sys write	
@@ -603,7 +780,7 @@ and:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rt						;llamo a RS
 	and r12,r13					;sumo los datos optenidos en RS y RT
 	mov dword [reg+r14],r12d			;guard la operacion de suma en el registro RD
@@ -614,7 +791,7 @@ and:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 sll:
@@ -624,7 +801,7 @@ sll:
 	mov rsi, instruc+74
 	mov rdx, 4
 	syscall
-	
+	Wfile instruc+74,4
 	call rd						;llamo RD
 	mov r10,r11
 ;---------------------imprimo una coma
@@ -633,7 +810,7 @@ sll:
 	mov rsi, coma
 	mov rdx, 1
 	syscall		
-	
+	Wfile coma,1
 	call rt						;Llamo a RT
 	
 ;---------------------otra coma
@@ -642,7 +819,7 @@ sll:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call sham					;Llamo a SHAM
 	mov cl, r14b					;muevo la cantidad de corrimientos a CL
 	shl r13d,cl					;realizo el corrimiento
@@ -655,7 +832,7 @@ sll:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 srl:
 ;-----------------------imprime la instrucion
@@ -664,7 +841,7 @@ srl:
 	mov rsi, instruc+78
 	mov rdx, 4
 	syscall
-	
+	Wfile instruc+78,4
 	call rd						;llamo RD
 	mov r10,r11
 ;---------------------imprimo una coma
@@ -673,7 +850,7 @@ srl:
 	mov rsi, coma
 	mov rdx, 1
 	syscall		
-	
+	Wfile coma,1
 	call rt						;Llamo a RT
 	
 ;---------------------otra coma
@@ -682,7 +859,7 @@ srl:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call sham					;Llamo a SHAM
 	mov cl, r14b					;muevo la cantidad de corrimientos a CL
 	shr r13d,cl					;realizo el corrimiento
@@ -695,7 +872,7 @@ srl:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 or:
 ;-----------------------imprime la instrucion
@@ -704,7 +881,7 @@ or:
 	mov rsi, instruc+47
 	mov rdx, 3
 	syscall
-	
+	Wfile instruc+47,3
 	call rd						;llamo a RD
 	mov r14,r11
 
@@ -713,7 +890,7 @@ or:
 	mov rsi, coma
 	mov rdx, 1
 	syscall	
-
+	Wfile coma,1
 	call rs						;llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -721,7 +898,7 @@ or:
 	mov rsi, coma
 	mov rdx, 1
 	syscall	
-
+	Wfile coma,1
 	call rt						;llamo a RT
 
 	mov rdi, 1					; sys write	
@@ -729,7 +906,7 @@ or:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-	
+	Wfile enteer,1
 	or r12,r13					;realizo la or con los dos registros
 	mov dword [reg+r14d],r12d			;Guardo el dato operado en la direccion del RD
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
@@ -741,7 +918,7 @@ nor:
 	mov rsi, instruc+43
 	mov rdx, 4
 	syscall
-
+	Wfile instruc+43,4
 	call rd						;llamo RD	
 	mov r14,r11
 
@@ -750,7 +927,7 @@ nor:
 	mov rsi, coma
 	mov rdx, 1
 	syscall	
-
+	Wfile coma,1
 	call rs						;Llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -758,7 +935,7 @@ nor:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rt						;Llamo a RT
 	or r12,r13					;realizo la or con los datos obtenidos por RS y RT
 	not r12						;niego la operacion or
@@ -769,7 +946,7 @@ nor:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-	
+	Wfile enteer,1
 	
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
@@ -781,7 +958,7 @@ sub:
 	mov rsi, instruc+82
 	mov rdx, 4
 	syscall
-	
+	Wfile instruc+82,4
 	call rd
 	mov r14, r11
 
@@ -790,7 +967,7 @@ sub:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rs						;Llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -798,7 +975,7 @@ sub:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rt						;Llamo a RT
 	
 
@@ -807,6 +984,7 @@ sub:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
+	Wfile enteer,1
 
 	sub r12,r13
 	mov dword [reg+r14d],r12d
@@ -819,7 +997,7 @@ addi:
 	mov rsi, instruc+4
 	mov rdx, 5
 	syscall
-
+	Wfile instruc+4,5
 	call rt						;llamo a RT
 
 	mov r14,r9
@@ -829,7 +1007,7 @@ addi:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rs						;Llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -837,20 +1015,19 @@ addi:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call imm					;Llamo a IMMEDITE
 
 	add r12, r13					;sumo el registro con el valor ingresado
 	mov dword [reg+r14d],r12d			;guard la operacion de suma en el registro RD
 
 	printVal r13
-	
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 andi:
@@ -860,7 +1037,7 @@ andi:
 	mov rsi, instruc+18
 	mov rdx, 5
 	syscall
-
+	Wfile instruc+18,5
 	call rt						;llamo a RT
 	mov r14,r9
 	
@@ -869,7 +1046,7 @@ andi:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-	
+	Wfile coma,1
 	call rs						;Llamo a RS
 
 	mov rdi, 1					; sys write	
@@ -877,7 +1054,7 @@ andi:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-	
+	Wfile coma,1
 	call imm					;Llamo a IMMEDITE
 	and r12, r13					;realizo la and con el dato ingresado
 	mov dword [reg+r14d], r12d			;rt=rs + imm
@@ -889,7 +1066,7 @@ andi:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 ori:
@@ -899,7 +1076,7 @@ ori:
 	mov rsi, instruc+50
 	mov rdx, 5
 	syscall
-
+	Wfile instruc+50,5
 	call rt						;llamo a RD
 	mov r14,r9
 	mov rdi, 1					; sys write	
@@ -907,7 +1084,7 @@ ori:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rs						;Llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -915,7 +1092,7 @@ ori:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-	
+	Wfile coma,1
 	call imm					;Llamo a IMMEDITE
 	or r12,r13					;aplico el or con el dato ingresado
 	mov dword [reg+r14d],r12d 			;rt=rs or imm			
@@ -926,7 +1103,7 @@ ori:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall	
-	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 jr:
@@ -936,15 +1113,14 @@ jr:
 	mov rsi, instruc+37
 	mov rdx, 3
 	syscall
-
+	Wfile instruc+37,3
 	call rs						;Llamo a RS
-	
+	Wfile enteer,1
 	mov dword [PC],r12d 				;rt=rs or imm----muevo la direccion contenida en $ra al PC
 	mov rax, 1
 	mov rsi, enteer
 	mov rdx, 1
 	syscall	
-	
 	jmp comparar;						;a lop sin hacer PC+4
 
 slt:
@@ -954,7 +1130,7 @@ slt:
 	mov rsi, instruc+54
 	mov rdx, 4
 	syscall
-
+	Wfile instruc+54,4
 	call rd						;Llamo a RD
 	mov r14, r11
 
@@ -963,7 +1139,7 @@ slt:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rs						;Llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -971,7 +1147,7 @@ slt:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 
 	call rt						;Llamo a RT
 
@@ -993,6 +1169,7 @@ poneuno:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 mult:
@@ -1002,7 +1179,7 @@ mult:
 	mov rsi, instruc+91
 	mov rdx, 5
 	syscall
-
+	Wfile instruc+91,5
 	call rs						;Llamo a RS
 
 	mov rdi, 1					; sys write	
@@ -1010,7 +1187,7 @@ mult:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call rt						;Llamo a RT
 	imul r12,r13					;realizo la multiplicacion
 	mov [prueba], r12d
@@ -1020,7 +1197,7 @@ mult:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 mflo:
@@ -1030,7 +1207,7 @@ mflo:
 	mov rsi, instruc + 96
 	mov rdx, 5
 	syscall
-
+	Wfile instruc+96,5
 	call rd						;Llamo a RD
 	mov r11d,[prueba]				;muevo el registro LOW de la multiplicacion  a RD
 	
@@ -1039,7 +1216,7 @@ mflo:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 j:
@@ -1049,7 +1226,7 @@ j:
 	mov rsi, instruc + 31
 	mov rdx, 2
 	syscall
-
+	Wfile instruc+31,2
 	call address					;llamo al address
 	
 	shl r13d,2					;hago un corrimiento al address
@@ -1064,7 +1241,7 @@ j:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-		
+	Wfile enteer,1
 	jmp lop						;ejecuta la instruccion 
 
 beq:
@@ -1074,7 +1251,7 @@ beq:
 	mov rsi, instruc+23
 	mov rdx,4
 	syscall
-
+	Wfile instruc+23,4
 	call rs						;llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -1082,7 +1259,7 @@ beq:
 	mov rsi, coma
 	mov rdx, 1
 	syscall	
-	
+	Wfile coma,1
 	call rt						;Llamo a RT
 	
 	mov r10,r13
@@ -1091,7 +1268,7 @@ beq:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	cmp r12,r10					;comparo r12d con r13d
 	
 	call imm					;optengo el immediate o direccion
@@ -1101,6 +1278,7 @@ beq:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
+	Wfile enteer,1
 	jne casi					;brinque a casi si no se cumple la condicion 
 
 	shl r13d, 2					;multiplico por 4 para moverme en memoria
@@ -1116,7 +1294,7 @@ bne:
 	mov rsi, instruc+27
 	mov rdx,4
 	syscall
-
+	Wfile instruc+27,4
 	call rs
 	
 	mov rdi, 1					; sys write	
@@ -1124,7 +1302,7 @@ bne:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-	
+	Wfile coma,1
 	call rt
 
 	mov r10,r13
@@ -1133,13 +1311,14 @@ bne:
 	mov rax, 1
 	mov rdx, 1
 	syscall
+	Wfile coma,1
 	call imm
 	printVal r13
 	mov rax, 1
 	mov rsi, enteer
 	mov rdx, 1
 	syscall
-
+	Wfile enteer,1
 	cmp r12,r10
 	je casi
 	
@@ -1155,7 +1334,7 @@ lw:
 	mov rsi, instruc+40
 	mov rdx,3
 	syscall
-
+	Wfile instruc+40,3
 	call rt						;llama rt
 	mov r14,r9
 	
@@ -1164,7 +1343,7 @@ lw:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-
+	Wfile coma,1
 	call imm					;llama el immediate
 	printVal r13	
 	
@@ -1173,7 +1352,7 @@ lw:
 	mov rsi, par1
 	mov rdx, 1
 	syscall
-	
+	Wfile par1,1
 	call rs						;llama rs
 	
 	mov rdi, 1					; sys write	
@@ -1181,7 +1360,7 @@ lw:
 	mov rsi, par2
 	mov rdx, 1
 	syscall
-
+	Wfile par2,1
 	add r12, r13					;los suma
 	cmp r12,797
 	jge drinv
@@ -1195,6 +1374,7 @@ lw:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall	
+	Wfile enteer,1
 	jmp casi
 sw:
 ;-----------------------imprime la instrucion
@@ -1204,7 +1384,7 @@ sw:
 	mov rsi, instruc+101
 	mov rdx,3
 	syscall
-
+	Wfile instruc+101,3
 	call rt						;llama rt
 	mov r10,r13
 	mov rdi, 1					; sys write	
@@ -1212,16 +1392,15 @@ sw:
 	mov rsi, coma
 	mov rdx, 1
 	syscall
-	
+	Wfile coma,1
 	call imm					;llama el immediate	
 	printVal r13
-
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, par1
 	mov rdx, 1
 	syscall
-
+	Wfile par1,1
 	call rs					;llama rs
 	add r12, r13					;los suma		
 	mov rdi, 1					; sys write	
@@ -1229,7 +1408,7 @@ sw:
 	mov rsi, par2
 	mov rdx, 1
 	syscall
-
+	Wfile par2,1
 
 	cmp r12,797
 	jge drinv
@@ -1241,6 +1420,7 @@ sw:
 	mov rsi, enteer
 	mov rdx, 1
 	syscall	
+	Wfile enteer,1
 	jmp casi
 
 jaal:
@@ -1250,7 +1430,7 @@ jaal:
 	mov rsi, instruc+33
 	mov rdx,4
 	syscall
-	
+	Wfile instruc+33,4
 	call address					;llamo al address
 	printVal r13	
 	shl r13d,2					;hago un corrimiento al address
@@ -1265,7 +1445,7 @@ jaal:
 	mov rsi, enteer
 	mov rdx,1
 	syscall	
-
+	Wfile enteer,1
 	jmp lop						;va a la direccion 
 
 slti:
@@ -1275,7 +1455,7 @@ slti:
 	mov rsi, instruc+58
 	mov rdx,5
 	syscall
-
+	Wfile instruc+58,5
 	call rt
 	mov r14,r13					;Llamo a RD
 	mov rdi, 1					; sys write	
@@ -1283,7 +1463,7 @@ slti:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-
+	Wfile coma,1
 	call rs						;Llamo a RS
 	
 	mov rdi, 1					; sys write	
@@ -1291,7 +1471,7 @@ slti:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-
+	Wfile coma,1
 	call imm					;Llamo a immediate
 
 	printVal r13
@@ -1302,7 +1482,8 @@ slti:
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, enteer
-	mov rdx,1	
+	mov rdx,1
+	Wfile enteer,1	
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 pone1:
 	
@@ -1313,6 +1494,7 @@ pone1:
 	mov rsi, enteer
 	mov rdx,1
 	syscall	
+	Wfile enteer,1
 	jmp casi					;Voy a la parte de codigo donde hago PC+4
 
 sltu:
@@ -1322,7 +1504,7 @@ sltu:
 	mov rsi, instruc+69
 	mov rdx,5
 	syscall	
-
+	Wfile instruc+69,5
 	call rd
 	mov r14,r11
 	mov rdi, 1					; sys write	
@@ -1330,7 +1512,7 @@ sltu:
 	mov rsi, coma
 	mov rdx,1
 	syscall	
-	
+	Wfile coma,1
 	call rsu
 	
 	mov rdi, 1					; sys write	
@@ -1338,7 +1520,7 @@ sltu:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-
+	Wfile coma,1
 	call rtu
 	
 	cmp r12,r13
@@ -1350,7 +1532,7 @@ sltu:
 	mov rsi, enteer
 	mov rdx,1
 	syscall	
-		
+	Wfile enteer,1
 	jmp casi
 pone11:
 	mov dword [reg+r14d],0
@@ -1359,6 +1541,7 @@ pone11:
 	mov rsi, enteer
 	mov rdx,1
 	syscall
+	Wfile enteer,1
 	jmp casi
 sltiu:
 ;-----------------------imprime la instrucion
@@ -1367,7 +1550,7 @@ sltiu:
 	mov rsi, instruc+63
 	mov rdx,6
 	syscall
-
+	Wfile instruc+63,6
 	call rtu
 	
 	mov r14,r9
@@ -1377,7 +1560,7 @@ sltiu:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-	
+	Wfile coma,1
 	call rsu
 	
 	mov rdi, 1					; sys write	
@@ -1385,7 +1568,7 @@ sltiu:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-	
+	Wfile coma,1
 	call immu
 	
 	printVal r13
@@ -1398,6 +1581,7 @@ sltiu:
 	mov rsi, enteer
 	mov rdx,1
 	syscall
+	Wfile enteer,1
 	jmp casi
 subu:
 ;-----------------------imprime la instrucion
@@ -1406,7 +1590,7 @@ subu:
 	mov rsi, instruc+86
 	mov rdx,5
 	syscall
-
+	Wfile instruc+86,5
 	call rd
 	mov r14,r11
 	mov rdi, 1					; sys write	
@@ -1414,7 +1598,7 @@ subu:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-	
+	Wfile coma,1
 	call rsu
 	
 	mov rdi, 1					; sys write	
@@ -1422,7 +1606,7 @@ subu:
 	mov rsi, coma
 	mov rdx,1
 	syscall
-	
+	Wfile coma,1
 	call rtu
 	
 	sub r12,r13
@@ -1433,29 +1617,30 @@ subu:
 	mov rsi, enteer
 	mov rdx,1
 	jmp casi
+	Wfile enteer,1
 	syscall
 addu:
 ;-----------------------imprime la instrucion
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, instruc+9
-	mov rdx,1
+	mov rdx,5
 	syscall
-	
+	Wfile instruc+9,5
 	call rtu
 	
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi, coma
 	mov rdx,1
-	
+	Wfile coma,1
 	call rsu
 	
 	mov rdi, 1					; sys write	
 	mov rax, 1
 	mov rsi,coma
 	mov rdx,1
-	
+	Wfile coma,1
 	call rd
 	
 	add r12,r13
@@ -1466,6 +1651,7 @@ addu:
 	mov rsi, enteer
 	mov rdx,1
 	syscall
+	Wfile enteer,1
 	jmp casi
 
 ;00000000101001000010100000100000 add	

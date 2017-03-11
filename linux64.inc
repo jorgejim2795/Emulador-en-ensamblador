@@ -2,9 +2,9 @@ section .bss
     digitSpace resb 100
     digitSpacePos resb 8
     printSpace resb 8
+    cad resb 8
 section .data
 	signo db "-"
-
 
 %macro print 1
     mov rax, %1
@@ -42,15 +42,11 @@ section .data
 	mov rsi, signo
 	mov rdx, 1
 	syscall
+	Wfile signo,1
 	mov rax,rbx
 
 %%este:
 	call %%printRAX
-
-	mov rax, 60
-	mov rdi, 0
-	syscall
-
 
 %%printRAX:
 	mov rcx, digitSpace
@@ -70,9 +66,10 @@ section .data
 	mov [rcx], dl
 	inc rcx
 	mov [digitSpacePos], rcx
-	
+	Wfile digitSpace,1
 	pop rax
 	cmp rax, 0
+	
 	jne %%printRAXLoop
 
 %%printRAXLoop2:
@@ -83,14 +80,12 @@ section .data
 	mov rsi, rcx
 	mov rdx, 1
 	syscall
-
 	mov rcx, [digitSpacePos]
 	dec rcx
 	mov [digitSpacePos], rcx
 
 	cmp rcx, digitSpace
 	jge %%printRAXLoop2
- 
 %endmacro
  
 
