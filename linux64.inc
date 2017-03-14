@@ -2,10 +2,28 @@ section .bss
     digitSpace resb 100
     digitSpacePos resb 8
     printSpace resb 8
-    cad resb 8
 section .data
-	signo db "-"
+	signo db "-",0
+ 
+%macro Wfile 2
+	mov rax, SYS_OPEN
+	mov rdi, filename2
+	mov rsi, O_WRONLY+O_APPEND
+	mov rdx, 0644o
+	syscall
 
+	push rax
+	mov rdi,rax
+	mov rax, SYS_WRITE
+	mov rsi, %1
+	mov rdx, %2
+	syscall
+
+	mov rax, SYS_CLOSE
+	pop rdi
+	syscall
+%endmacro
+	
 %macro print 1
     mov rax, %1
     mov [printSpace], rax
@@ -28,64 +46,60 @@ section .data
 %endmacro
 
 
-
 %macro printVal 1
-	mov rax, %1
-	cmp rax, 0
-	jge %%este
+     mov rax, %1
+     cmp rax,0
+     jge %%_printRAX
+     not rax
+     add rax,1
+     mov r9, rax
+     mov rax, 1
+     mov rdi, 1
+     mov rsi, signo
+     mov rdx, 1
+     syscall
+     Wfile signo,1
+     mov rax,r9
+%%_printRAX:
+     mov rcx, digitSpace
+     mov rbx, 10
+     mov [rcx], rbx
+     ;inc rcx
+     mov [digitSpacePos], rcx
+%%_printRAXLoop:
+     mov rdx, 0
+     mov rbx, 10
+     div rbx
+     push rax
+     add rdx, 48
+  
+     mov rcx, [digitSpacePos]
+     mov [rcx], dl
+     inc rcx
+     mov [digitSpacePos], rcx
+     
+     pop rax
+     cmp rax, 0
+     jne %%_printRAXLoop
+     mov r8,0
+%%_printRAXLoop2:
+     cmp r8,1
+     jne %%sig
+     Wfile [digitSpacePos], 1
+%%sig:
+     mov r8,1
+     mov rcx, [digitSpacePos]
 
-	not rax
-	add rax,1
-	mov rbx, rax
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, signo
-	mov rdx, 1
-	syscall
-	Wfile signo,1
-	mov rax,rbx
-
-%%este:
-	call %%printRAX
-
-%%printRAX:
-	mov rcx, digitSpace
-	;mov rbx, 10
-	;mov [rcx], rbx
-	;inc rcx
-	mov [digitSpacePos], rcx
-
-%%printRAXLoop:
-	mov rdx, 0
-	mov rbx, 10
-	div rbx
-	push rax
-	add rdx, 48
-
-	mov rcx, [digitSpacePos]
-	mov [rcx], dl
-	inc rcx
-	mov [digitSpacePos], rcx
-	Wfile digitSpace,1
-	pop rax
-	cmp rax, 0
-	
-	jne %%printRAXLoop
-
-%%printRAXLoop2:
-	mov rcx, [digitSpacePos]
-
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, rcx
-	mov rdx, 1
-	syscall
-	mov rcx, [digitSpacePos]
-	dec rcx
-	mov [digitSpacePos], rcx
-
-	cmp rcx, digitSpace
-	jge %%printRAXLoop2
+     mov rax, 1
+     mov rdi, 1
+     mov rsi, rcx
+     mov rdx, 1
+     syscall
+     mov rcx, [digitSpacePos]
+     dec rcx
+     mov [digitSpacePos], rcx
+     cmp rcx, digitSpace
+     jge %%_printRAXLoop2 
 %endmacro
  
 
@@ -96,25 +110,6 @@ section .data
     mov rax, SYS_EXIT
     mov rdi, 0
     syscall
-%endmacro
- 
-%macro Wfile 2
-	mov rax, SYS_OPEN
-	mov rdi, filename2
-	mov rsi, O_WRONLY+O_APPEND
-	mov rdx, 0644o
-	syscall
-
-	push rax
-	mov rdi,rax
-	mov rax, SYS_WRITE
-	mov rsi, %1
-	mov rdx, %2
-	syscall
-
-	mov rax, SYS_CLOSE
-	pop rdi
-	syscall
 %endmacro
 
 %macro register 1

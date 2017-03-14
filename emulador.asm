@@ -5,9 +5,11 @@ section .data
 	regis db "$at,$v0,$v1,$a0,$a1,$a2,$a3,$t0,$t1,$t2,$t3,$t4,$t5,$t6,$t7,$s0,$s1,$s2,$s3,$s4,$s5,$s6,$s7,$t8,$t9,$k0,$k1,$gp,$sp,$fp,$ra"
 	instruc db "add addi addu and andi beq bne j jal jr lw nor or ori slt slti sltiu sltu sll srl sub subu mult mflo sw "
 	enteer db "",0xa
+	tab db "",9
 	coma db ","
 	par1 db "("
 	par2 db ")"	
+	igual db "="
 	filename db "ROM.txt",0
 	filename2 db "resultado.txt",0
 	welcome db 'Bienvenido al Emulador MIPS', 0xa
@@ -32,31 +34,137 @@ section .data
 	len2: equ $-int2
 	int3: db "Gabino Venegas Rodriguez 2014013616",0xa,0xa
 	len3: equ $-int3
-	msjdirec db "direccion invalida ",0xa
-	lmsjdirec equ $- msjdirec
-	msjfun db "funcion invalido ",0xa
+	msjfun db "funcion invalido linea: ",0
 	lmsjfun equ $- msjfun
-	msjopcode db "opcode invalido ",0xa
+	msjopcode db "opcode invalido linea: ",0
 	lmsjopcode equ $- msjopcode
-	msjdrinv db "direccion de memoria invalida",0xa
+	msjdrinv db "direccion de memoria invalida linea: ",0
 	lmsjdrinv: equ $-msjdrinv
 	msjinvcar db "caracter no valido en la rom",0xa
 	lmsjinvcar: equ $-msjinvcar
+	Exitosa db "Ejecusion Exitosa",0xa
+	lExitosa equ $-Exitosa
+	Contenido db "Contenido de los registros",0xa
+	lContenido  equ $-Contenido
+	Fallida db "Ejecución Fallida",0xa
+	lFallida equ $- Fallida
+	argrande db "El argumento es mayor a 3 digitos",0xa
+	largrande equ $- argrande
+
 	cadena:  db "lscpu | grep ID ; lscpu | grep name ; lscpu | grep Fam ; lscpu | grep Ar ; top -bn1 | grep 'Cpu(s)' ",0xa
 	cadena1:  db "lscpu | grep ID >> resultado.txt ; lscpu | grep name >> resultado.txt ; lscpu | grep Fam >> resultado.txt ; lscpu | grep Ar >> resultado.txt ; top -bn1 | grep 'Cpu(s)' >> resultado.txt ",0xa
 section .bss
 	text resb 4950 ;rom
 	mem resb 600   ;memoria de programa
 	data resb 800 ;memoria de datos y stack unidos 0-400 memoria 401-800 stack
-	laweva resb 400 ; A JORGE LE DA MIEDO QUE SU CODIGO CAIGA xd
 	reg resb 128    ;banco de registros
 	tecla resb 16
 	PC resb 4      ;registro para pc
 	frs resb 8
 	prueba resb 4 
+	arg0 resb 4
+	arg1 resb 4
+
 section .text
-	global main
-main:
+	global _main
+_main:
+	pop rax	
+	pop rax
+	mov r14, rax
+	pop rax
+	cmp r14,1
+	je _aqui
+	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS	
+	mov r10d, [rax]	
+	mov dword [arg0],r10d
+	cmp r14,2
+	je _cargA0
+	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS
+	mov r11d, [rax]
+	mov dword [arg1],r11d
+_cargA0:
+	mov r10b, [arg0+3]
+	cmp r10b, 00
+	jne invarg
+	mov r10b, [arg0+1]
+	cmp r10b ,00
+	je _or01
+	mov r10b, [arg0+2]
+	cmp r10b, 00
+	je _or02
+	jmp _centena
+_or01:
+	mov r10d,[arg0]
+	and r10d,0000000ffh
+	mov dword [arg0], r10d
+	jmp _unidad
+_or02:
+	mov r10d,[arg0]
+	and r10d,00000ffffh
+	mov dword [arg0], r10d
+	jmp _decena
+
+_centena:
+	mov r9b, [arg0]
+	sub r9b, 48
+	imul r9d,100
+	add r8d, r9d
+	jmp _decena
+
+_decena:
+	mov r9b, [arg0+1]
+	sub r9b, 48
+	imul r9d,10
+	add r8d, r9d
+	jmp _unidad
+
+_unidad:
+	mov r9b, [arg0+2]
+	sub r9b, 48
+	add r8d, r9d
+	
+cargA1:
+	mov r10b, [arg1+3]
+	cmp r10b, 00
+	jne invarg
+	mov r10b, [arg1+1]
+	cmp r10b ,00
+	je _or11
+	mov r10b, [arg1+2]
+	cmp r10b, 00
+	je _or12
+	jmp _centena1
+_or11:
+	mov r10d,[arg1]
+	and r10d,0000000ffh
+	mov dword [arg1], r10d
+	jmp _unidad1
+_or12:
+	mov r10d,[arg0]
+	and r10d,00000ffffh
+	mov dword [arg1], r10d
+	jmp _decena1
+_centena1:
+	mov r9b, [arg1]
+	sub r9b, 48	
+	imul r9d,100
+	add r15d, r9d
+	jmp _decena1
+
+_decena1:
+	mov r9,0
+	mov r9b, [arg1+1]	
+	sub r9b, 48
+	imul r9d,10	
+	add r15d, r9d
+
+_unidad1:
+	mov r9, 0
+	mov r9b, [arg1+2]	
+	sub r9b, 48
+	add r15d, r9d
+_aqui:
+;___________________________________________________________________________________________________________________________-
 ;------------------------------se crea el resultado.txt para guardar los datos de pantalla	
 	mov rax, SYS_OPEN
 	mov rdi, filename2
@@ -68,6 +176,14 @@ main:
 	pop rdi
 	syscall
 ;------------------------------------------------------------
+	mov r8,0
+_REGLOP:
+	mov dword [reg+r8],0d	
+	add r8,4
+	cmp r8,124
+	jne _REGLOP
+;___________________________________________________________________________________________________________________________---
+
 	mov dword [PC], 0		;inicializo el pc en 0
 	mov dword [reg+0],0		;$zero en 0
 	mov dword [reg+116],800d	;$sp en el limite de la memoria 
@@ -83,9 +199,8 @@ main:
 	mov dword [reg+20],8d
 	mov dword [reg+124],600d		;$ra inicial es igual a la direccion limite del pc para salir del progrma despues de la ejecuccion
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
-
-
 ;--------------imprime la bienvenida------------
+		
 	mov rdi, 1					; sys write
 	mov rax, 1
 	mov rsi, welcome				;Bienvanido al emulador MIPS
@@ -234,9 +349,8 @@ casi:							;Funcion de PC+4
 	mov dword [PC],eax				;guardo el PC actualizado
 comparar:
 	mov r8,[reg+20]	
-	cmp eax,600					;comparo si ya termino de recorrer la memoria del programa
+	cmp eax,600					;comparo si ya termino de recorrer la memoria del programa	
 	jne lop						;brinco a lop para realizar la siguiente instruccion MIPS
-	
 ;------------------------------------------------------------Imprecion del mensaje de salida---------------------------------------
 salida:
 	mov r8,[PC]					;muevo lo que hay en PC a r8				
@@ -260,22 +374,38 @@ sis:
 	mov rdx, 1
 	syscall
 	Wfile enteer,1
+
 	mov rdi, 1					; sys write	
 	mov rax, 1
-	mov rsi, msj1
-	mov rdx, lmsj1
+	mov rsi, enteer
+	mov rdx, 1
 	syscall
-	Wfile msj1,lmsj
+	Wfile enteer,1
 
-
-	mov rdi, 0					; sys write	
-	mov rax, 0	
-	mov rsi, tecla
-	mov rdx, 16
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, Exitosa
+	mov rdx, lExitosa
 	syscall
+	Wfile Exitosa,lExitosa
+	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, Contenido
+	mov rdx, lContenido
+	syscall
+	Wfile Contenido,lContenido
+	
+	call _Preg
+	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
 
-
-	mov rdi, 1; sys write
+	mov rdi, 1					; sys write
 	mov rax, 1
 	mov rsi, int1
 	mov rdx, len1
@@ -301,9 +431,23 @@ sis:
 	mov rbp, rsp                                
 	mov rdi, cadena                             
 	call system                                                      
-	 
 	jmp _salir
 ;--------------------------------------------------------------salir del programa (el loop es muy raro XD)
+
+;-------------------------------------------------
+;mensaje indica argumento invalido
+;-------------------------------------------------
+invarg:
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, argrande
+	mov rdx, largrande
+	syscall
+	Wfile argrande,largrande
+	jmp _salir
+
+	
+
 ;-------------------------------------------------
 ;mensaje indica caracter invalido
 ;-------------------------------------------------
@@ -323,10 +467,37 @@ invcar:
 invfun:
 	mov rdi, 1					; sys write	
 	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
 	mov rsi, msjfun
 	mov rdx, lmsjfun
 	syscall
 	Wfile msjfun,lmsjfun
+	mov r9,[PC]
+	shr r9,2
+	printVal r9
+	Wfile msjfun,lmsjfun
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, Fallida
+	mov rdx, lFallida
+	syscall
+	Wfile Fallida,lFallida
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
 	jmp _salir
 
 ;-------------------------------------------------
@@ -335,27 +506,90 @@ invfun:
 invopcode:
 	mov rdi, 1					; sys write	
 	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
 	mov rsi, msjopcode
 	mov rdx, lmsjopcode
 	syscall
+	mov r9,[PC]
+	shr r9,2
+	printVal r9
+	
 	Wfile msjopcode,lmsjopcode
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, Fallida
+	mov rdx, lFallida
+	syscall
+	Wfile Fallida,lFallida
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
 	jmp _salir
 ;-------------------------------------------------
 ;mensaje indica direccion de memoria invalida
 ;-------------------------------------------------
 
 drinv: 
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
 	mov rdi, 1				; sys write	
 	mov rax, 1
 	mov rsi, msjdrinv
 	mov rdx, lmsjdrinv
 	syscall
 	Wfile msjdrinv,lmsjdrinv
+	mov r8,[PC]
+	shr r8,2
+	printVal r8
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx, 1
+	syscall
+	Wfile enteer,1
 	jmp _salir
 ;-------------------------------------------------
 ;sale del programa
 ;-------------------------------------------------
-_salir:	           
+_salir:	     
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, msj1
+	mov rdx, lmsj1
+	syscall
+	Wfile enteer,1
+	Wfile msj1,25
+	Wfile enteer,1
+
+	mov rdi, 0					; sys write	
+	mov rax, 0	
+	mov rsi, tecla
+	mov rdx, 16
+	syscall
+      
 	mov rax, 60					;sys_exit
 	mov rdi, 0
 	syscall
@@ -746,7 +980,7 @@ add:
 	Wfile coma,1
 	call rt						;llamo a RS
 	add r12,r13					;sumo los datos optenidos en RS y RT
-	mov dword [reg+r14],r12d			;guard la operacion de suma en el registro RD
+	mov dword [reg+r14d],r12d			;guard la operacion de suma en el registro RD
 
 ;------------------imprimo un enter
 	mov rdi, 1					; sys write	
@@ -1117,6 +1351,8 @@ jr:
 	call rs						;Llamo a RS
 	Wfile enteer,1
 	mov dword [PC],r12d 				;rt=rs or imm----muevo la direccion contenida en $ra al PC
+	
+	mov rdi, 1
 	mov rax, 1
 	mov rsi, enteer
 	mov rdx, 1
@@ -1365,8 +1601,8 @@ lw:
 	cmp r12,797
 	jge drinv
 
-	mov r11, [data+r12d]				;muev el dato a un registro
-
+	mov r11d, [data+r12d]				;muev el dato a un registro
+_rev:
 	mov dword [reg+r14d],r11d ;			;guarda en rt
 
 	mov rdi,1	
@@ -1653,8 +1889,344 @@ addu:
 	syscall
 	Wfile enteer,1
 	jmp casi
+_Preg:
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+4
+	mov rdx,3
+	syscall
+	Wfile regis+4,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+8]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
 
-;00000000101001000010100000100000 add	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+64
+	mov rdx,3
+	syscall
+	Wfile regis+64,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+68]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+112
+	mov rdx,3
+	syscall
+	Wfile regis+112,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+116]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+8
+	mov rdx,3
+	syscall
+	Wfile regis+8,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+12]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+68
+	mov rdx,3
+	syscall
+	Wfile regis+68,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+72]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+12
+	mov rdx,3
+	syscall
+	Wfile regis+12,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+16]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+72
+	mov rdx,3
+	syscall
+	Wfile regis+72,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+76]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+	
+	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+16
+	mov rdx,3
+	syscall
+	Wfile regis+16,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+20]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+76
+	mov rdx,3
+	syscall
+	Wfile regis+76,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+80]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+20
+	mov rdx,3
+	syscall
+	Wfile regis+20,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+24]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+80
+	mov rdx,3
+	syscall
+	Wfile regis+80,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+84]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+	
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+24
+	mov rdx,3
+	syscall
+	Wfile regis+24,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+28]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+84
+	mov rdx,3
+	syscall
+	Wfile regis+84,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+88]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+60
+	mov rdx,3
+	syscall
+	Wfile regis+60,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+64]	
+	printVal r9
+	Wfile r9,1
+	Wfile tab,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, tab
+	mov rdx,1
+	syscall
+
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, regis+88
+	mov rdx,3
+	syscall
+	Wfile regis+88,3
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, igual
+	mov rdx,1
+	syscall
+	Wfile igual,1
+	mov r9d,[reg+92]	
+	printVal r9
+	Wfile r9,1
+	mov rdi, 1					; sys write	
+	mov rax, 1
+	mov rsi, enteer
+	mov rdx,1
+	syscall
+	Wfile enteer,1
+	
+	ret
+	
+	
+;00000000101001000010100000100000
 ;00001000000000000000000000001100
 
 ;00100011101111011111111111111000
