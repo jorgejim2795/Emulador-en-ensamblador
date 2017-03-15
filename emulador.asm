@@ -64,107 +64,220 @@ section .bss
 	prueba resb 4 
 	arg0 resb 4
 	arg1 resb 4
+	arg2 resb 4
+	arg3 resb 4
 
 section .text
-	global _main
-_main:
+	global main
+main:	
 	pop rax	
-	pop rax
 	mov r14, rax
 	pop rax
 	cmp r14,1
-	je _aqui
+	je aqui
+n1:
 	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS	
 	mov r10d, [rax]	
 	mov dword [arg0],r10d
 	cmp r14,2
-	je _cargA0
+	je cargA0
 	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS
 	mov r11d, [rax]
 	mov dword [arg1],r11d
-_cargA0:
-	mov r10b, [arg0+3]
-	cmp r10b, 00
-	jne invarg
-	mov r10b, [arg0+1]
-	cmp r10b ,00
-	je _or01
-	mov r10b, [arg0+2]
-	cmp r10b, 00
-	je _or02
-	jmp _centena
-_or01:
-	mov r10d,[arg0]
-	and r10d,0000000ffh
-	mov dword [arg0], r10d
-	jmp _unidad
-_or02:
-	mov r10d,[arg0]
-	and r10d,00000ffffh
-	mov dword [arg0], r10d
-	jmp _decena
+d1:	
+	cmp r14,3
+	je cargA1
+	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS
+	mov r11d, [rax]
+	mov dword [arg2],r11d
+	cmp r14,4
+	je cargA2
+	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS
+	mov r11d, [rax]
+	mov dword [arg3],r11d
 
-_centena:
-	mov r9b, [arg0]
+cargA3:
+	mov r10b, [arg3+1]
+	cmp r10b ,00
+	je or31
+	mov r10b, [arg3+2]
+	cmp r10b, 00
+	je or32
+	jmp centena3
+	mov r10b, [arg3+3]
+	cmp r10b, 00
+	jne aqui
+or31:
+	mov r10d,[arg3]
+	and r10d,0000000ffh
+	shl r10d, 16
+	mov dword [arg3], r10d
+	jmp unidad3
+or32:
+	mov r10d,[arg3]
+	and r10d,00000ffffh
+	shl r10d, 8
+	mov dword [arg3], r10d
+	jmp decena3
+
+centena3:
+	mov r9b, [arg3]
 	sub r9b, 48
 	imul r9d,100
 	add r8d, r9d
-	jmp _decena
 
-_decena:
-	mov r9b, [arg0+1]
+decena3:
+	mov r9b, [arg3+1]
 	sub r9b, 48
 	imul r9d,10
 	add r8d, r9d
-	jmp _unidad
 
-_unidad:
-	mov r9b, [arg0+2]
+unidad3:
+	mov r9b, [arg3+2]
 	sub r9b, 48
 	add r8d, r9d
+u3:
+	mov dword [reg+28],r8d
+	mov r8,0
 	
-cargA1:
-	mov r10b, [arg1+3]
+
+cargA2:
+	mov r10b, [arg2+1]
+	cmp r10b ,00
+	je or21
+	mov r10b, [arg2+2]
 	cmp r10b, 00
-	jne invarg
+	je or22
+	jmp centena2
+	mov r10b, [arg2+3]
+	cmp r10b, 00
+	jne aqui
+or21:
+	mov r10d,[arg2]
+	and r10d,0000000ffh
+	shl r10d, 16	
+	mov dword [arg2], r10d
+	jmp unidad2
+or22:
+	mov r10d,[arg2]
+	and r10d,00000ffffh
+	shl r10d, 8
+	mov dword [arg2], r10d
+	jmp decena2
+
+centena2:
+	mov r9b, [arg2]
+	sub r9b, 48
+	imul r9d,100
+	add r8d, r9d
+
+decena2:
+	mov r9b, [arg2+1]
+	sub r9b, 48
+	imul r9d,10
+	add r8d, r9d
+
+unidad2:
+	mov r9b, [arg2+2]
+	sub r9b, 48
+	add r8d, r9d
+	mov dword [reg+24],r8d
+u2:
+	mov r8,0
+	
+
+cargA1:
 	mov r10b, [arg1+1]
 	cmp r10b ,00
-	je _or11
+	je or11
 	mov r10b, [arg1+2]
 	cmp r10b, 00
-	je _or12
-	jmp _centena1
-_or11:
+	je or12
+	mov r10b, [arg1+3]
+	cmp r10b, 00
+	jne aqui
+	jmp centena1
+or11:
 	mov r10d,[arg1]
 	and r10d,0000000ffh
+	shl r10d, 16
 	mov dword [arg1], r10d
-	jmp _unidad1
-_or12:
-	mov r10d,[arg0]
+	jmp unidad1
+or12:
+	mov r10d,[arg1]
 	and r10d,00000ffffh
+	shl r10d, 8
 	mov dword [arg1], r10d
-	jmp _decena1
-_centena1:
+	jmp decena1
+centena1:
 	mov r9b, [arg1]
 	sub r9b, 48	
 	imul r9d,100
 	add r15d, r9d
-	jmp _decena1
 
-_decena1:
+decena1:
 	mov r9,0
 	mov r9b, [arg1+1]	
 	sub r9b, 48
 	imul r9d,10	
 	add r15d, r9d
 
-_unidad1:
+unidad1:
 	mov r9, 0
+r1:	
 	mov r9b, [arg1+2]	
+q1:	
 	sub r9b, 48
+w1:
 	add r15d, r9d
-_aqui:
-;___________________________________________________________________________________________________________________________-
+u1:
+	mov dword [reg+20],r15d
+
+cargA0:
+	mov r10b, [arg0+1]
+	cmp r10b ,00
+	je or01
+	mov r10b, [arg0+2]
+	cmp r10b, 00
+	je or02
+	jmp centena
+	mov r10b, [arg0+3]
+	cmp r10b, 00
+	jne aqui
+or01:
+	mov r10d,[arg0]
+	and r10d,0000000ffh
+	shl r10d, 16
+	mov dword [arg0], r10d
+	jmp unidad
+or02:
+	mov r10d,[arg0]
+	and r10d,00000ffffh
+	shl r10d, 8
+	mov dword [arg0], r10d
+	jmp decena
+
+centena:
+	mov r9b, [arg0]
+	sub r9b, 48
+	imul r9d,100
+	add r8d, r9d
+
+decena:
+	mov r9b, [arg0+1]
+	sub r9b, 48
+	imul r9d,10
+	add r8d, r9d
+
+unidad:
+	mov r9b, [arg0+2]
+	sub r9b, 48
+	add r8d, r9d
+u0:
+	mov dword [reg+16],r8d
+	
+
+aqui:
 ;------------------------------se crea el resultado.txt para guardar los datos de pantalla	
 	mov rax, SYS_OPEN
 	mov rdi, filename2
@@ -199,6 +312,7 @@ _REGLOP:
 	mov dword [reg+20],8d
 	mov dword [reg+124],600d		;$ra inicial es igual a la direccion limite del pc para salir del progrma despues de la ejecuccion
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
+
 ;--------------imprime la bienvenida------------
 		
 	mov rdi, 1					; sys write
