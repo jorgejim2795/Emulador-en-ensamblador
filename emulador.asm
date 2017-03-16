@@ -51,8 +51,7 @@ section .data
 	argrande db "El argumento es mayor a 3 digitos",0xa
 	largrande equ $- argrande
 
-	cadena:  db "lscpu | grep ID ; lscpu | grep name ; lscpu | grep Fam ; lscpu | grep Ar ; top -bn1 | grep 'Cpu(s)' ",0xa
-	cadena1:  db "lscpu | grep ID >> resultado.txt ; lscpu | grep name >> resultado.txt ; lscpu | grep Fam >> resultado.txt ; lscpu | grep Ar >> resultado.txt ; top -bn1 | grep 'Cpu(s)' >> resultado.txt ",0xa
+	cadena db "lscpu | grep ID ; lscpu | grep name ; lscpu | grep Fam ; lscpu | grep Ar ; top -bn1 | grep 'Cpu(s)' ; lscpu | grep ID >> resultado.txt ; lscpu | grep name >> resultado.txt ; lscpu | grep Fam >> resultado.txt ; lscpu | grep Ar >> resultado.txt ; top -bn1 | grep 'Cpu(s)' >> resultado.txt ",0xa
 section .bss
 	text resb 4950 ;rom
 	mem resb 600   ;memoria de programa
@@ -68,8 +67,8 @@ section .bss
 	arg3 resb 4
 
 section .text
-	global main
-main:	
+	global _start
+_start:	
 	pop rax	
 	mov r14, rax
 	pop rax
@@ -77,7 +76,7 @@ main:
 	je aqui
 n1:
 	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS	
-	mov r10d, [rax]	
+trx:	mov r10d, [rax]	
 	mov dword [arg0],r10d
 	cmp r14,2
 	je cargA0
@@ -88,7 +87,7 @@ d1:
 	cmp r14,3
 	je cargA1
 	pop rax			;SACA LA CANTIDAD DE ARGUMENTOS
-	mov r11d, [rax]
+rev:	mov r11d, [rax]
 	mov dword [arg2],r11d
 	cmp r14,4
 	je cargA2
@@ -308,8 +307,6 @@ _REGLOP:
 	mov dword [data+212],6d
 	mov dword [data+216],7d
 	mov dword [data+220],8d
-	mov dword [reg+16],192d
-	mov dword [reg+20],8d
 	mov dword [reg+124],600d		;$ra inicial es igual a la direccion limite del pc para salir del progrma despues de la ejecuccion
 ;-----------------------------------------------INPRIMO EL MENSAJE DE BIENVENIDA-----------------------------------------------
 
@@ -540,11 +537,13 @@ sis:
 	mov rdx, len3
 	syscall
 	Wfile int3,len3
+         
+	push rbp
+	mov rbp,rsp
+	mov rdi,cadena
+	call system                            
 	
-	push rbp                                     
-	mov rbp, rsp                                
-	mov rdi, cadena                             
-	call system                                                      
+                                                   
 	jmp _salir
 ;--------------------------------------------------------------salir del programa (el loop es muy raro XD)
 
