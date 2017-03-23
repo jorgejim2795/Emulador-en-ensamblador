@@ -1,8 +1,0 @@
-creacion del archivo objeto:
-	nasm -f elf64 emulador.asm
-
-creacion del archivo ejecutable:
-	gcc emulador.o -o emulador
-
-ejecucion del programa:
-	./emulador [arg0] [arg1] [arg2] [arg3]
