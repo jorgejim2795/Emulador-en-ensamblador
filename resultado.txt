@@ -1,0 +1,157 @@
+Bienvenido al Emulador MIPS
+EL-4313-Lab. Estructura de Microprocesadores
+Semestre 1S-2017
+Buscando ROM.txt
+Presione Enter para continuar:
+
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $a1,$zero,$t0
+jal 0
+addi $sp,$sp,-8
+addi $t0,$a1,-1
+sw $t0,0($sp)
+sw $ra,4($sp)
+bne $a1,$zero,3
+add $v0,$zero,$zero
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+lw $t0,0($sp)
+sll $t1,$t0,2
+add $t1,$a0,$t1
+lw $t2,0($t1)
+add $v0,$v0,$t2
+lw $ra,4($sp)
+addi $sp,$sp,8
+jr $ra
+
+
+Ejecución Exitosa
+Contenido de los registros
+$v0=36	$s1=0	$sp=800
+$v1=0	$s2=0
+$a0=192	$s3=0
+$a1=0	$s4=0
+$a2=0	$s5=0
+$a3=0	$s6=0
+$s0=0	$s7=0
+
+Jorge Jimenez Mora       2014085036
+Jose Hernandez Castro    2014086307
+Gabino Venegas Rodriguez 2014013616
+
+ID de fabricante:      GenuineIntel
+Model name:            Intel(R) Core(TM) i7-3520M CPU @ 2.90GHz
+Familia de CPU:        6
+Arquitectura:          x86_64
+%Cpu(s): 10,6 usuario,  3,2 sist,  0,1 adecuado, 84,5 inact,  1,4 en espera,  0,
+
+Presione Enter para salir
